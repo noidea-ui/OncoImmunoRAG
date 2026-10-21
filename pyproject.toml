@@ -1,0 +1,52 @@
+[project]
+name = "oncoimmuno-rag"
+version = "0.1.0"
+description = "RAG system for oncology immunotherapy literature: PDF ingestion, vector retrieval, evidence grading, and evaluation."
+authors = [
+    { name = "OncoImmunoRAG" }
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.15"
+license = "MIT"
+
+dependencies = [
+    "llama-index>=0.12.0,<1.0.0",
+    # 0.6.0+ relaxes the pandas<2.3.0 pin, which is required for Python 3.14 wheels.
+    "llama-index-readers-file>=0.6.0,<1.0.0",
+    "chromadb>=0.5.0,<1.0.0",
+    # pypdf 6.x ships cp314 wheels; 5.x tops out at cp313.
+    "pypdf>=6.0.0,<7.0.0",
+    # pandas 2.3+ ships cp314 wheels; 2.2.x tops out at cp313.
+    "pandas>=2.3.0,<4.0.0",
+    "openai>=1.50.0,<2.0.0",
+    "llama-index-embeddings-huggingface (>=0.7.0,<0.8.0)",
+    "sentence-transformers (>=5.6.1,<6.0.0)",
+    "pyyaml (>=6.0.3,<7.0.0)",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+# src layout: ingestion / retrieval / grading / evaluation are sibling top-level
+# packages living under src/. Each has its own __init__.py. We use Poetry purely
+# for dependency management, so disable project-as-package installation.
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0.0,<9.0.0"
+pytest-cov = ">=5.0.0,<7.0.0"
+ruff = ">=0.6.0,<1.0.0"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --cov=oncoimmuno_rag --cov-report=term-missing"

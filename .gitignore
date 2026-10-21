@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Poetry
+# NOTE: poetry.lock is intentionally NOT ignored — the lock file must be
+# versioned so that dependency resolution is reproducible across machines.
+
+# Virtual envs
+.venv/
+venv/
+
+# Project data (do not commit PDFs / vector DB)
+data/raw/*
+!data/raw/.gitkeep
+data/vector_db/*
+!data/vector_db/.gitkeep
+data/vector_db_22/*
+verification/*.pdf
+holdout/*.pdf
+
+# Local Claude Code settings (machine-specific permission allow-list)
+.claude/settings.local.json
+
+# Stray zero-byte artifacts left by an unquoted shell command.
+# They are empty, carry no data, and should be deleted from disk.
+# Kept here so `git add -A` cannot sweep them into the repository.
+/Fetch
+/Use
+/unset
+/在
+/如果
+/配置前请清除以下环境变量，它们的优先级高于配置文件，会覆盖
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Env
+.env

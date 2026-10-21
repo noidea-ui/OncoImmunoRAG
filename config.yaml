@@ -1,0 +1,23 @@
+# OncoImmunoRAG configuration
+# --------------------------------------------------------------------
+# openai_api_key: DO NOT put a credential in this file — it is versioned.
+#                   Supply the key via the OPENAI_API_KEY environment variable
+#                   (see .env.example). The env var takes precedence over any
+#                   openai_api_key value present here.
+
+
+# Embedding model. BAAI/bge-large-en-v1.5 is a strong open-source embedder
+# served via HuggingFace / sentence-transformers; llama-index wraps it as
+# HuggingFaceEmbedding.
+embedding_model: "BAAI/bge-large-en-v1.5"
+
+# LLM (OpenAI-compatible). Defaults point at MiniMax, but any
+# /v1 chat-completions endpoint that accepts `Authorization: Bearer <key>`
+# will work — just override the two fields below (or set the matching env
+# vars OPENAI_API_KEY / LLM_BASE_URL).
+llm_model: "MiniMax-Text-01"
+llm_base_url: "https://api.minimaxi.com/v1"
+
+# Text splitting parameters (used by SentenceSplitter in ingestion).
+chunk_size: 1024
+chunk_overlap: 200

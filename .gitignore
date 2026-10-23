@@ -20,6 +20,13 @@ htmlcov/
 .venv/
 venv/
 
+# Stale snapshot of src/ — kept on disk for reference only, never committed.
+# It is missing retrieval/pubmed_client.py and retrieval/temp_indexer.py, and its
+# selector.py predates the evidence-grade rerank layer. Committing it would put
+# an obsolete source tree in history and confuse code search / AI agents.
+# See CURRENT_ISSUES.md ISSUE-038.
+src_00/
+
 # Project data (do not commit PDFs / vector DB)
 data/raw/*
 !data/raw/.gitkeep
@@ -32,15 +39,13 @@ holdout/*.pdf
 # Local Claude Code settings (machine-specific permission allow-list)
 .claude/settings.local.json
 
-# Stray zero-byte artifacts left by an unquoted shell command.
-# They are empty, carry no data, and should be deleted from disk.
-# Kept here so `git add -A` cannot sweep them into the repository.
-/Fetch
-/Use
-/unset
-/在
-/如果
-/配置前请清除以下环境变量，它们的优先级高于配置文件，会覆盖
+# NOTE: evaluation outputs (tests/results/, data/benchmark_results/,
+# verification/results/, holdout/results/, holdout/rerank_ab/,
+# holdout/search_ab/) and generated charts (result/) are deliberately NOT
+# ignored here. They stay on disk and remain visible to `git status` until
+# the pipeline is fixed and the benchmarks are re-run. Only the inputs
+# (source PDFs, vector DBs) and the test/tooling code are ignored or
+# tracked as appropriate.
 
 # IDE
 .vscode/

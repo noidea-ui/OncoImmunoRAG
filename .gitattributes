@@ -1,0 +1,84 @@
+# Line-ending and diff policy for OncoImmunoRAG.
+#
+# Goal: one canonical form in the repository (LF) so that diffs stay clean
+# across Windows / Linux / macOS checkouts, and binary assets are never
+# touched by EOL normalization.
+#
+# The `eol=lf` setting overrides core.autocrlf for the paths below, so a
+# fresh clone produces LF working-tree files even on Windows.
+
+# --- Default -------------------------------------------------------------
+# Auto-detect text vs binary; store text with LF, check out text with LF.
+* text=auto eol=lf
+
+# --- Text: source code ---------------------------------------------------
+*.py       text eol=lf
+*.pyi      text eol=lf
+*.pyx      text eol=lf
+*.js       text eol=lf
+*.ts       text eol=lf
+*.css      text eol=lf
+*.html     text eol=lf
+*.xml      text eol=lf
+
+# --- Text: config / data -------------------------------------------------
+*.md       text eol=lf
+*.yaml     text eol=lf
+*.yml      text eol=lf
+*.toml     text eol=lf
+*.json     text eol=lf
+*.jsonl    text eol=lf
+*.cfg      text eol=lf
+*.ini      text eol=lf
+*.txt      text eol=lf
+*.csv      text eol=lf
+*.tsv      text eol=lf
+*.lock     text eol=lf
+*.svg      text eol=lf
+
+# --- Text: shell scripts -------------------------------------------------
+*.sh       text eol=lf
+*.bash     text eol=lf
+*.zsh      text eol=lf
+*.ps1      text eol=lf
+*.bat      text eol=lf
+*.cmd      text eol=lf
+
+# --- Binary: never normalize, never diff ---------------------------------
+*.pdf      binary
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.bmp      binary
+*.ico      binary
+*.webp     binary
+*.ttf      binary
+*.otf      binary
+*.woff     binary
+*.woff2    binary
+*.eot      binary
+*.mp3      binary
+*.mp4      binary
+*.zip      binary
+*.gz       binary
+*.tar      binary
+*.7z       binary
+
+# --- Binary: databases and vector stores ---------------------------------
+*.sqlite   binary
+*.sqlite3  binary
+*.db       binary
+*.mdb      binary
+*.bin      binary
+*.parquet  binary
+*.npy      binary
+*.npz      binary
+*.pkl      binary
+*.joblib   binary
+
+# --- Binary: office documents -------------------------------------------
+*.xlsx     binary
+*.xls      binary
+*.docx     binary
+*.pptx     binary

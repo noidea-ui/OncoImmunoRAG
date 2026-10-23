@@ -22,6 +22,20 @@ dependencies = [
     "llama-index-embeddings-huggingface (>=0.7.0,<0.8.0)",
     "sentence-transformers (>=5.6.1,<6.0.0)",
     "pyyaml (>=6.0.3,<7.0.0)",
+    # Required by the Chroma vector-store backend imported in
+    # ingestion/vector_store.py, ingestion/append_pdfs.py,
+    # retrieval/query_engine.py and retrieval/temp_indexer.py.
+    # 0.6.0 requires llama-index-core>=0.13,<0.15 and chromadb>=0.5.17,
+    # both of which the existing lock already satisfies.
+    "llama-index-vector-stores-chroma>=0.6.0,<1.0.0",
+    # Required by app.py (the Streamlit front-end).
+    "streamlit>=1.60.0,<2.0.0",
+    # Directly imported by retrieval/pubmed_client.py (NCBI E-utilities client).
+    # It was previously only present as a transitive dependency, which is not a
+    # guarantee — any upstream package dropping it would break PubMed search.
+    # Already resolved at 2.34.2 in poetry.lock; this only makes the dependency
+    # explicit, it does not change the resolved version.
+    "requests>=2.31.0,<3.0.0",
 ]
 
 [build-system]

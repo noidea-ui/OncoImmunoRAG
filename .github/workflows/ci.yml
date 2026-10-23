@@ -1,0 +1,178 @@
+# CI configuration for OncoImmunoRAG
+#
+# SCOPE — what this workflow deliberately does NOT do:
+#   * It does not install or download the 1.3 GB embedding model.
+#   * It does not call any LLM endpoint or need OPENAI_API_KEY.
+#   * It does not read data/vector_db, data/raw/, holdout/ or verification/.
+#   * It does not depend on any absolute path from a developer's machine.
+#
+# The repository is 100% ignored for data and model weights, so a CI runner
+# that clones this repo has no PDFs and no vector store. Anything that needs
+# them cannot be part of CI today (see CURRENT_ISSUES.md ISSUE-026).
+#
+# Before enabling this on GitHub, see the "Enable checklist" at the bottom.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref — matters for a repo that will get
+# several parallel feature branches.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 is the floor that actually resolves: the lock file pins
+        # numpy 2.5.1, which declares python >=3.12 (CURRENT_ISSUES.md ISSUE-002).
+        # 3.11 is deliberately NOT included — it cannot install the lock.
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      # --no-interaction keeps CI non-blocking. The lock file must not change:
+      # a dirty poetry.lock means the lock and pyproject.toml disagree, which
+      # is itself a bug worth failing on.
+      - name: Install dependencies
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry install --no-interaction
+          git diff --exit-code poetry.lock || {
+            echo "::error::poetry.lock changed during install — pyproject.toml and the lock file disagree"
+            exit 1
+          }
+
+      # -o addopts="" is mandatory: the default addopts contains
+      # --cov=oncoimmuno_rag, a package that does not exist, so coverage
+      # silently no-ops (CURRENT_ISSUES.md ISSUE-011).
+      - name: Run tests
+        run: |
+          poetry run pytest tests/ -o addopts="" -p no:cacheprovider -q --tb=short
+
+      - name: Verify the original baseline tests still pass unchanged
+        run: |
+          poetry run pytest tests/test_table_extractor.py tests/test_parser.py \
+            -o addopts="" -p no:cacheprovider -q
+
+  lint:
+    name: Ruff (changed files only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install dependencies
+        run: |
+          poetry config virtualenvs.in-project true
+          poetry install --no-interaction
+
+      # The repo has 248 pre-existing ruff errors and ruff format would rewrite
+      # 47 files. Formatting the whole tree is explicitly forbidden by
+      # CONTRIBUTING.md, so CI checks only what a PR actually touched.
+      - name: Ruff check on changed files
+        run: |
+          BASE=$(git merge-base HEAD origin/main)
+          CHANGED=$(git diff --name-only "$BASE" HEAD -- '*.py' | tr '\n' ' ')
+          if [ -z "$CHANGED" ]; then
+            echo "No Python files changed — nothing to lint."
+            exit 0
+          fi
+          echo "Linting: $CHANGED"
+          poetry run ruff check $CHANGED
+
+  secrets:
+    name: No credentials committed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # config.yaml is tracked by git, so a credential written there would be
+      # published. .env must never be tracked either.
+      - name: Assert config.yaml carries no credential
+        run: |
+          if grep -nE '^\s*openai_api_key\s*:\s*\S' config.yaml; then
+            echo "::error::config.yaml defines an active openai_api_key — this file is version-controlled"
+            exit 1
+          fi
+
+      - name: Assert .env is not tracked
+        run: |
+          if git ls-files --error-unmatch .env 2>/dev/null; then
+            echo "::error::.env is tracked by git"
+            exit 1
+          fi
+
+      # NOTE: the .gitignore rules are written as `data/raw/*`, i.e. they
+      # ignore the *contents*, not the directory itself. Checking `data/raw`
+      # would fail spuriously, so each path below is a representative file
+      # that the corresponding rule is supposed to match.
+      - name: Assert data and model artefacts stay ignored
+        run: |
+          set -e
+          for path in \
+            "data/raw/example.pdf" \
+            "data/vector_db/chroma.sqlite3" \
+            "holdout/example.pdf" \
+            "verification/example.pdf" \
+            "src_00/retrieval/query_engine.py" \
+            ".env"
+          ; do
+            if git check-ignore -q "$path"; then
+              echo "ok      ignored: $path"
+            else
+              echo "::error::$path is NOT ignored — it would be uploaded to GitHub"
+              exit 1
+            fi
+          done
+
+# ---------------------------------------------------------------------------
+# Enable checklist — all of this must be done BEFORE turning CI on
+# ---------------------------------------------------------------------------
+# 1. Push these files to GitHub. They are inert until the workflow exists on
+#    origin/main.
+# 2. Run the pipeline on a branch and confirm `poetry install` resolves
+#    cleanly on ubuntu-latest. The lock file contains 18 Linux CUDA packages
+#    that Windows never installs — they WILL be installed here (CURRENT_ISSUES.md
+#    ISSUE-032). Expect a large download; consider excluding them via
+#    `[tool.poetry.group.dev.dependencies]` if CI install time is a problem.
+# 3. Confirm the test job does not try to download the embedding model. It
+#    should not — no test constructs a live QueryEngine.
+# 4. Set branch protection on `main`: require status checks
+#    "Tests (Python 3.12)" and "No credentials committed" before merge.
+#    This is a GitHub repository setting change — it needs the owner's
+#    approval and must not be done unilaterally.
+# 5. Do NOT add auto-merge or auto-approve. Review stays human.
